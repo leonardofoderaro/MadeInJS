@@ -1,13 +1,5 @@
 package org.madeinjs;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.madein.MadeIn;
-
 
 public class Application {
 
@@ -28,8 +20,6 @@ public class Application {
 		script.append("print(doc);");
 
 		System.out.println(engine.eval(script.toString()));
-
-
 
 	}
 
