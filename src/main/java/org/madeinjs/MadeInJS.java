@@ -1,6 +1,8 @@
 package org.madeinjs;
 
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.script.Bindings;
@@ -10,18 +12,31 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.madein.MadeIn;
+
 @SuppressWarnings("restriction")
 public class MadeInJS implements ScriptEngine {
-
 	
 	ScriptEngine engine;
 
 	ScriptEngineManager manager;
+	
+	List<String> mavenCoordinates;
+	List<String> classesImports;
+	
+	MadeIn madein;
 
 	public MadeInJS() {
+		
+		madein = new MadeIn();
+		
 		manager = new ScriptEngineManager();
 
 		engine = new ScriptEngineManager().getEngineByName("Nashorn");
+		
+	    mavenCoordinates = new ArrayList<String>();
+		classesImports = new ArrayList<String>();
 
 	}
 
@@ -45,19 +60,35 @@ public class MadeInJS implements ScriptEngine {
 	}
 
 	private String preprocess(String script) {
+		
 		Scanner scanner = new Scanner(script);
+		
 		while (scanner.hasNextLine()) {
 		  String line = scanner.nextLine();
 		  System.out.println(line);
 		  if (line.startsWith("@resolve")) {
-			  System.out.println("will resolve " + line);
+			  mavenCoordinates.add(line.replace("@resolve ", "").replaceAll(" .*", ""));
 		  }
 		  
 		  if (line.startsWith("@import")) {
-			  System.out.println("will import " + line);
+			  classesImports.add(line.replace("@import ", ""));
 		  }
 		  
 		}
+		
+		for (String s : mavenCoordinates) {
+			try {
+				System.out.println("installing " + s);
+				madein.install(s);
+			} catch (ArtifactResolutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		
+		
 		scanner.close();
 		
 		return script;
