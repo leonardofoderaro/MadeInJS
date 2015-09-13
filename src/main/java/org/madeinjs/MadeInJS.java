@@ -1,6 +1,9 @@
 package org.madeinjs;
 
 import java.io.Reader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -17,25 +20,56 @@ import org.madein.MadeIn;
 
 @SuppressWarnings("restriction")
 public class MadeInJS implements ScriptEngine {
-	
+
 	ScriptEngine engine;
 
 	ScriptEngineManager manager;
-	
+
 	List<String> mavenCoordinates;
 	List<String> classesImports;
-	
+
 	MadeIn madein;
 
 	public MadeInJS() {
-		
+
+
 		madein = new MadeIn();
-		
+
+		//Thread.currentThread().setContextClassLoader(madein.getClassLoader());
+
+		/*	URLClassLoader cl;
+ 			cl = URLClassLoader.newInstance(madein.getUrls());
+			Thread.currentThread().setContextClassLoader(cl);*/
+
+
+		/*	
+		try {
+			madein.getClassLoader().loadClass("javax.script.ScriptEngineManager");
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} */
+
+		/*	try {
+			Class<?> managerClass = Class.forName("javax.script.ScriptEngineManager",false,madein.getClassLoader());
+			manager = (ScriptEngineManager) managerClass.newInstance();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} */
+
 		manager = new ScriptEngineManager();
 
-		engine = new ScriptEngineManager().getEngineByName("Nashorn");
-		
-	    mavenCoordinates = new ArrayList<String>();
+		engine = manager.getEngineByName("Nashorn");
+
+
+		mavenCoordinates = new ArrayList<String>();
 		classesImports = new ArrayList<String>();
 
 	}
@@ -56,41 +90,126 @@ public class MadeInJS implements ScriptEngine {
 
 	@Override
 	public Object eval(String script) throws ScriptException {
-		return engine.eval(preprocess(script));
+		String processed = preprocess(script);
+		
+		return engine.eval(processed);
 	}
 
 	private String preprocess(String script) {
-		
+
 		Scanner scanner = new Scanner(script);
-		
+
 		while (scanner.hasNextLine()) {
-		  String line = scanner.nextLine();
-		  System.out.println(line);
-		  if (line.startsWith("@resolve")) {
-			  mavenCoordinates.add(line.replace("@resolve ", "").replaceAll(" .*", ""));
-		  }
-		  
-		  if (line.startsWith("@import")) {
-			  classesImports.add(line.replace("@import ", ""));
-		  }
-		  
+			String line = scanner.nextLine();
+			System.out.println(line);
+			if (line.startsWith("@resolve")) {
+				mavenCoordinates.add(line.replace("@resolve ", "").replaceAll(" .*", ""));
+			}
+
+			if (line.startsWith("@import")) {
+				classesImports.add(line.replace("@import ", ""));
+			}
+
 		}
-		
+
 		for (String s : mavenCoordinates) {
 			try {
-				System.out.println("installing " + s);
 				madein.install(s);
 			} catch (ArtifactResolutionException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
+		/*
+		try {
+			URLClassLoader cl = URLClassLoader.newInstance(new URL[] {new URL("file:///Users/iLeo/personalgit/madeinjs/target/local-repo/org/apache/solr/solr-solrj/3.5.0/solr-solrj-3.5.0.jar")});
+
+			Class<?> c = Class.forName("org.apache.solr.common.SolrDocument", true, cl);
+
+
+		} catch (ClassNotFoundException | MalformedURLException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+
+		try {
+			engine.eval("var Class = Java.type(\"java.lang.Class\");");
+			engine.eval("print(Class);");
+		//	engine.eval("var Integer=Class.forName(\"java.lang.Integer\");");
+		//	engine.eval("var i = Integer.newInstance();");
+
+		} catch (ScriptException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		for (String s : classesImports) {
+
+			try {
+				Class cls = Class.forName(s.trim(), false, this.madein.getClassLoader());
+				engine.put("X", cls);
+				try {
+					engine.eval("print(X);");
+				} catch (ScriptException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		} */
+
+
+		/*	Thread.currentThread().setContextClassLoader(madein.getClassLoader());
+
+		 */
+
+
+
+		/*	URLClassLoader cl;
+		cl = URLClassLoader.newInstance(madein.getUrls());
+		Thread.currentThread().setContextClassLoader(cl);  */
+
+
+		URLClassLoader cl;
+		//	cl = URLClassLoader.newInstance(new URL[] {new URL("file:///Users/iLeo/personalgit/madeinjs/target/local-repo/org/apache/solr/solr-solrj/3.5.0/solr-solrj-3.5.0.jar")});
+		cl = URLClassLoader.newInstance(madein.getUrls());
+
+		Thread.currentThread().setContextClassLoader(cl);
 		
+		manager = new ScriptEngineManager();
+
+		engine = manager.getEngineByName("Nashorn");
 		
-		
-		
+
+		for (String s : classesImports) {
+			String cmd = "var " + s.replaceAll(".*\\.",  "") + " = Java.type(\"" + s.trim() + "\");";
+			//String cmd = "importClass(" + s.trim() + ");";
+			System.out.println(cmd);
+			try {
+				/*	System.out.println(s.replaceAll(".*\\.",  ""));
+
+				(s.replaceAll(".*\\.",  ""), Class.forName(s.trim(), false, this.madein.getClassLoader())); */
+
+
+				engine.eval(cmd);
+				/* engine.put("classLoader", this.madein.getClassLoader());
+				engine.eval("print(classLoader)");
+				engine.eval("Thread.currentThread().setContextClassLoader(classLoader)"); */
+			} catch (ScriptException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+
+
+
 		scanner.close();
-		
+
 		return script;
 	}
 
@@ -116,7 +235,7 @@ public class MadeInJS implements ScriptEngine {
 	@Override
 	public void put(String key, Object value) {
 		// TODO Auto-generated method stub
-		 engine.put(key, value);
+		engine.put(key, value);
 	}
 
 	@Override
@@ -151,7 +270,7 @@ public class MadeInJS implements ScriptEngine {
 
 	@Override
 	public void setContext(ScriptContext context) {
-		 engine.setContext(context);
+		engine.setContext(context);
 
 	}
 
