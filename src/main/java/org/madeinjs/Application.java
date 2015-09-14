@@ -1,5 +1,11 @@
 package org.madeinjs;
 
+import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+
 
 public class Application {
 
@@ -8,19 +14,11 @@ public class Application {
 	{
 		MadeInJS engine = new MadeInJS();
 
-		StringBuffer script = new StringBuffer();
+		List<String> l = Files.readAllLines( Paths.get(engine.getClass().getResource("script.js").toURI()), Charset.defaultCharset());
 
-		script.append("/*\n\r");
-		script.append("@resolve org.apache.solr:solr-solrj:5.3.0 \n\r");
-		script.append("@import java.lang.Thread \n\r");
-		script.append("@import org.apache.solr.common.SolrDocument \n\r");
-		script.append("*/ \n\r");
-		script.append("var doc = new SolrDocument();");
-		script.append("doc.setField('nome', 'leo');");
-		script.append("print(doc);");
 
-		System.out.println(engine.eval(script.toString()));
-
+		String joined = String.join("\n\r", l);
+		engine.eval(joined);
 	}
 
 }
