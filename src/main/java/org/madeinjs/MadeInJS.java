@@ -1,6 +1,7 @@
 package org.madeinjs;
 
 import java.io.Reader;
+import java.io.StringWriter;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.madein.MadeIn;
+import org.madeinjs.aether.listeners.websockets.WSRepositoryListener;
 
 @SuppressWarnings("restriction")
 public class MadeInJS implements ScriptEngine {
@@ -28,18 +31,31 @@ public class MadeInJS implements ScriptEngine {
 
 	MadeIn madein;
 
+	private StringWriter writer;
+	
+	private AbstractTransferListener transferListener;
+
+	private WSRepositoryListener repositoryListener;
+
 	public MadeInJS() {
 
 		madein = new MadeIn();
 
-		/*
-		manager = new ScriptEngineManager();
-		engine = manager.getEngineByName("Nashorn");
-		*/
-
 		mavenCoordinates = new ArrayList<String>();
+
 		classesImports = new ArrayList<String>();
 
+	}
+	
+	public MadeInJS(StringWriter writer) {
+		madein = new MadeIn();
+
+		mavenCoordinates = new ArrayList<String>();
+
+		classesImports = new ArrayList<String>();
+		
+		this.writer = writer;
+		
 	}
 
 
@@ -59,10 +75,18 @@ public class MadeInJS implements ScriptEngine {
 	@Override
 	public Object eval(String script) throws ScriptException {
 		String processed = preprocess(script);
-		
 		return engine.eval(processed);
 	}
 
+	
+	
+	public Object eval(String script, StringWriter writer) throws ScriptException {
+		String processed = preprocess(script);
+		this.writer = writer;
+		engine.getContext().setWriter(writer);
+		return engine.eval(processed);
+	}
+	
 	private String preprocess(String script) {
 
 		Scanner scanner = new Scanner(script);
@@ -98,6 +122,9 @@ public class MadeInJS implements ScriptEngine {
 		manager = new ScriptEngineManager();
 		engine = manager.getEngineByName("Nashorn");
 		
+		if (this.writer != null) {
+			engine.getContext().setWriter(writer);
+		}
 
 		for (String s : classesImports) {
 			String cmd = "var " + s.replaceAll(".*\\.",  "") + " = Java.type(\"" + s.trim() + "\");";
@@ -182,5 +209,19 @@ public class MadeInJS implements ScriptEngine {
 	@Override
 	public ScriptEngineFactory getFactory() {
 		return engine.getFactory();
+	}
+
+	public void setTransferListener(AbstractTransferListener transferListener) {
+		// TODO Auto-generated method stub
+		this.transferListener = transferListener;
+		System.out.println("setting transferListener");
+		madein.setTransferListener(transferListener);
+	}
+
+	public void setRepositoryListener(WSRepositoryListener repositoryListener) {
+		// TODO Auto-generated method stub
+	  this.repositoryListener = repositoryListener;	
+	  System.out.println("set repo listener 1");
+	  madein.setRepositoryListener(repositoryListener);
 	}
 }
