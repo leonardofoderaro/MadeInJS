@@ -1,23 +1,46 @@
 /*
-@resolve org.apache.httpcomponents:httpclient:4.4.1
-@resolve org.apache.solr:solr-solrj:4.8.0 
-@import org.apache.solr.client.solrj.impl.CloudSolrServer
-@import org.apache.solr.client.solrj.SolrQuery
-@import org.apache.http.impl.client.SystemDefaultHttpClient
-@import org.apache.http.impl.client.CloseableHttpClient
+@resolve org.xerial:sqlite-jdbc:3.8.11.1
+@import org.sqlite.JDBC
+@import java.sql.Connection
+@import java.sql.Driver
+@import java.sql.ResultSet
+@import java.sql.SQLException
+@import java.sql.Statement
+@import java.util.Properties
 */
 
-var zkHost = "src-app-dev.eprice.local:2181";
-var server = new CloudSolrServer(zkHost);
 
-//server.setParser(new XMLResponseParser());
-var parameters = new SolrQuery();
-parameters.add("q", "*:*");
-parameters.add("rows", "2");
-//parameters.add("qt", "/select"); 
-parameters.add("collection", "0"); 
-var response = server.query(parameters);
-var list = response.getResults();
-print(list);
+var driver = new JDBC();
+var conn = driver.connect("jdbc:sqlite:test.db", new Properties());
 
+var sql = "";
+var stmt = null;
+
+try {
+	stmt = conn.createStatement();
+	sql = "CREATE TABLE TEST (MESSAGE TEXT)"; 
+	stmt.executeUpdate(sql);
+
+	stmt.close();
+
+} catch (sqlex) {
+ //  print(sqlex);
+}
+
+sql = "insert into test(message) values('hello world!')";
+stmt.executeUpdate(sql);
+stmt.close();
+
+sql = "select message from test";
+
+var rs = stmt.executeQuery(sql);
+
+while (rs.next()) {
+	var msg = rs.getString("message");
+	print(msg);
+}
+
+rs.close();
+
+conn.close();
 
