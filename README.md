@@ -43,3 +43,5 @@ Assuming you have a working SolrCloud instance:
 
     print("\n\n");
 
+
+You'll need the (https://github.com/leonardofoderaro/MadeIn)[madein] package to run it. 
