@@ -23,7 +23,7 @@ Assuming you have a working SolrCloud instance:
         "fl": "name, score",
         "rows": "10",
         "collection": "<your-collection>",
-        "q": "saber light"
+        "q": "lightsaber"
     }
 
     var parameters = new SolrQuery();
