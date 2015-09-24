@@ -44,4 +44,4 @@ Assuming you have a working SolrCloud instance:
     print("\n\n");
 
 
-You'll need the [https://github.com/leonardofoderaro/MadeIn](madein) package to run it. 
+You'll need the [madein](https://github.com/leonardofoderaro/MadeIn) package to run it. 
