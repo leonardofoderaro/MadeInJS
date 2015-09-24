@@ -9,38 +9,46 @@
 @import java.util.Properties
 */
 
-
+print("creating JDBC connection...");
 var driver = new JDBC();
 var conn = driver.connect("jdbc:sqlite:test.db", new Properties());
+
 
 var sql = "";
 var stmt = null;
 
 try {
 	stmt = conn.createStatement();
-	sql = "CREATE TABLE TEST (MESSAGE TEXT)"; 
+	sql = "CREATE TABLE TEST (MESSAGE TEXT)";
+	print("creating table...");
 	stmt.executeUpdate(sql);
 
 	stmt.close();
 
 } catch (sqlex) {
- //  print(sqlex);
+   print(sqlex);
 }
 
-sql = "insert into test(message) values('hello world!')";
+sql = "insert into test(message) values('hello world! - "  + new Date() + "')";
+print("executing insert...");
 stmt.executeUpdate(sql);
 stmt.close();
 
 sql = "select message from test";
 
+print("executing select...");
 var rs = stmt.executeQuery(sql);
 
+print("iterating results...")
 while (rs.next()) {
 	var msg = rs.getString("message");
 	print(msg);
 }
 
-rs.close();
 
+print("closing resultset and connection...");
+rs.close();
 conn.close();
+
+print("thanks!");
 
