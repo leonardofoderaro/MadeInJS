@@ -32,10 +32,12 @@ public class MadeInJS implements ScriptEngine {
 	MadeIn madein;
 
 	private StringWriter writer;
-	
+
 	private AbstractTransferListener transferListener;
 
 	private WSRepositoryListener repositoryListener;
+
+	private boolean resolve = true;
 
 	public MadeInJS() {
 
@@ -46,16 +48,16 @@ public class MadeInJS implements ScriptEngine {
 		classesImports = new ArrayList<String>();
 
 	}
-	
+
 	public MadeInJS(StringWriter writer) {
 		madein = new MadeIn();
 
 		mavenCoordinates = new ArrayList<String>();
 
 		classesImports = new ArrayList<String>();
-		
+
 		this.writer = writer;
-		
+
 	}
 
 
@@ -78,22 +80,30 @@ public class MadeInJS implements ScriptEngine {
 		return engine.eval(processed);
 	}
 
-	
-	
+
+
 	public Object eval(String script, StringWriter writer) throws ScriptException {
 		String processed = preprocess(script);
 		this.writer = writer;
 		engine.getContext().setWriter(writer);
 		return engine.eval(processed);
 	}
-	
+
 	private String preprocess(String script) {
 
 		Scanner scanner = new Scanner(script);
 
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
-			System.out.println(line);
+			if (line.startsWith("@preprocessor")) {
+				String[] parts = line.split(" ");
+				if (parts.length < 2) {
+					//TODO throw an exception
+					System.out.println("err");
+				} else {
+					this.resolve = ("on".equals(parts[1].toLowerCase())); 
+				}
+			}
 			if (line.startsWith("@resolve")) {
 				mavenCoordinates.add(line.replace("@resolve ", "").replaceAll(" .*", ""));
 			}
@@ -104,31 +114,30 @@ public class MadeInJS implements ScriptEngine {
 
 		}
 
-		for (String s : mavenCoordinates) {
-			try {
-				madein.install(s);
-			} catch (ArtifactResolutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		if (this.resolve) {
+			for (String s : mavenCoordinates) {
+				try {
+					madein.install(s);
+				} catch (ArtifactResolutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 
-
 		URLClassLoader cl;
 		cl = URLClassLoader.newInstance(madein.getUrls());
-
 		Thread.currentThread().setContextClassLoader(cl);
-		
+
 		manager = new ScriptEngineManager();
 		engine = manager.getEngineByName("Nashorn");
-		
+
 		if (this.writer != null) {
 			engine.getContext().setWriter(writer);
 		}
 
 		for (String s : classesImports) {
 			String cmd = "var " + s.replaceAll(".*\\.",  "") + " = Java.type(\"" + s.trim() + "\");";
-			System.out.println(cmd);
 			try {
 				engine.eval(cmd);
 			} catch (ScriptException e) {
@@ -137,6 +146,7 @@ public class MadeInJS implements ScriptEngine {
 			}
 
 		}
+
 
 
 
@@ -220,8 +230,8 @@ public class MadeInJS implements ScriptEngine {
 
 	public void setRepositoryListener(WSRepositoryListener repositoryListener) {
 		// TODO Auto-generated method stub
-	  this.repositoryListener = repositoryListener;	
-	  System.out.println("set repo listener 1");
-	  madein.setRepositoryListener(repositoryListener);
+		this.repositoryListener = repositoryListener;	
+		System.out.println("set repo listener 1");
+		madein.setRepositoryListener(repositoryListener);
 	}
 }
